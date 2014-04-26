@@ -1,0 +1,90 @@
+
+\documentclass[journal]{IEEEtran}
+
+\usepackage{bbm}
+\newcommand{\field}[1]{\mathbb{#1}}
+
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{multirow}
+\usepackage{cite}
+\usepackage{bm}
+
+\usepackage{dsfont}
+\usepackage{yonatan}
+\def\I{\ensuremath{\mathds{1}}}
+\DeclareMathOperator*{\argmin}{argmin}
+
+\ifCLASSINFOpdf
+  \usepackage[pdftex]{graphicx}
+  % declare the path(s) where your graphic files are
+   \graphicspath{{../figures/}{../jpeg/}}
+  % and their extensions so you won't have to specify these with
+  % every instance of \includegraphics
+  \DeclareGraphicsExtensions{.pdf,.jpeg,.png}
+\else
+  % \usepackage[dvips]{graphicx}
+  % declare the path(s) where your graphic files are
+  % \graphicspath{{../eps/}}
+  % \DeclareGraphicsExtensions{.eps}
+\fi
+\usepackage{array}
+%\usepackage[tight,footnotesize]{subfigure}
+\usepackage{subcaption}
+
+% correct bad hyphenation here
+\hyphenation{op-tical net-works semi-conduc-tor}
+
+\usepackage{color}
+%\usepackage{cleveref}
+\usepackage{hyperref}
+
+
+
+\begin{document}
+%
+\title{Literature Review}
+\author{Yonatan~Vaizman}
+
+\markboth{}%
+{Vaizman \MakeLowercase{\textit{et al.}}: }
+
+\maketitle
+
+
+
+\section{Audio processing}
+\subsection{LPC}
+\subsection{Frequency-warped LPC}
+\subsection{Fourier space excitation-filter framework}
+
+\section{Optimization and learning}
+\subsection{LPC optimization}
+\subsection{L2, L1 minimizations}
+\subsection{Optimization of mixtures}
+\subsection{Sparsecoding and compressed sensing}
+\subsection{LTI filter clustering}
+
+\section{MIR applications}
+\subsection{Source separation}
+\subsection{Melody extraction}
+\subsection{Chord recognition}
+\subsection{Instrument recognition}
+
+\section{Datasets}
+
+\ifCLASSOPTIONcaptionsoff
+  \newpage
+\fi
+
+
+%\bibliographystyle{IEEEtran}
+%\bibliography{References}
+
+
+
+% that's all folks
+\end{document}
+
+
