@@ -2,15 +2,17 @@
 \BOOKMARK [2][-]{subsection.1.1}{LPC}{section.1}% 2
 \BOOKMARK [2][-]{subsection.1.2}{Frequency-warped LPC}{section.1}% 3
 \BOOKMARK [2][-]{subsection.1.3}{Fourier space excitation-filter framework}{section.1}% 4
-\BOOKMARK [1][-]{section.2}{Optimization and learning}{}% 5
-\BOOKMARK [2][-]{subsection.2.1}{LPC optimization}{section.2}% 6
-\BOOKMARK [2][-]{subsection.2.2}{L2, L1 minimizations}{section.2}% 7
-\BOOKMARK [2][-]{subsection.2.3}{Optimization of mixtures}{section.2}% 8
-\BOOKMARK [2][-]{subsection.2.4}{Sparsecoding and compressed sensing}{section.2}% 9
-\BOOKMARK [2][-]{subsection.2.5}{LTI filter clustering}{section.2}% 10
-\BOOKMARK [1][-]{section.3}{MIR applications}{}% 11
-\BOOKMARK [2][-]{subsection.3.1}{Source separation}{section.3}% 12
-\BOOKMARK [2][-]{subsection.3.2}{Melody extraction}{section.3}% 13
-\BOOKMARK [2][-]{subsection.3.3}{Chord recognition}{section.3}% 14
-\BOOKMARK [2][-]{subsection.3.4}{Instrument recognition}{section.3}% 15
-\BOOKMARK [1][-]{section.4}{Datasets}{}% 16
+\BOOKMARK [2][-]{subsection.1.4}{Filterbanks \(overcomplete codebooks?\) for speech analysis}{section.1}% 5
+\BOOKMARK [1][-]{section.2}{Optimization and learning}{}% 6
+\BOOKMARK [2][-]{subsection.2.1}{LPC optimization}{section.2}% 7
+\BOOKMARK [2][-]{subsection.2.2}{L2, L1 minimizations}{section.2}% 8
+\BOOKMARK [2][-]{subsection.2.3}{Optimization of mixtures}{section.2}% 9
+\BOOKMARK [2][-]{subsection.2.4}{Sparsecoding and compressed sensing}{section.2}% 10
+\BOOKMARK [2][-]{subsection.2.5}{LTI filter clustering}{section.2}% 11
+\BOOKMARK [1][-]{section.3}{MIR applications}{}% 12
+\BOOKMARK [2][-]{subsection.3.1}{Source separation}{section.3}% 13
+\BOOKMARK [2][-]{subsection.3.2}{Melody extraction}{section.3}% 14
+\BOOKMARK [2][-]{subsection.3.3}{Chord recognition}{section.3}% 15
+\BOOKMARK [2][-]{subsection.3.4}{Instrument recognition}{section.3}% 16
+\BOOKMARK [1][-]{section.4}{Datasets}{}% 17
+\BOOKMARK [1][-]{section*.1}{References}{}% 18
