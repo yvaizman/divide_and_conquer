@@ -6,7 +6,7 @@
 \BOOKMARK [2][-]{subsection.1.5}{Filterbanks \(overcomplete codebooks?\) for speech analysis}{section.1}% 6
 \BOOKMARK [1][-]{section.2}{Optimization and learning}{}% 7
 \BOOKMARK [2][-]{subsection.2.1}{LPC optimization}{section.2}% 8
-\BOOKMARK [2][-]{subsection.2.2}{L2, L1 minimizations}{section.2}% 9
+\BOOKMARK [2][-]{subsection.2.2}{L2, L1, Lp minimizations}{section.2}% 9
 \BOOKMARK [2][-]{subsection.2.3}{Optimization of mixtures}{section.2}% 10
 \BOOKMARK [2][-]{subsection.2.4}{Sparsecoding and compressed sensing}{section.2}% 11
 \BOOKMARK [2][-]{subsection.2.5}{LTI filter clustering}{section.2}% 12
