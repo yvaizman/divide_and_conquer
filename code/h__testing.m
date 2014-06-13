@@ -15,6 +15,7 @@ params.do_preemph = true;
 w               = mean(w,2);
 w               = resample(w,params.sr,sr_orig);
 
+S = spectrogram(w,params.winlen,params.hoplen,1024);
 seg             = w(50001:55000);
 
 params.criterion = 'L2';
@@ -22,7 +23,11 @@ params.criterion = 'L2';
 
 params.criterion = 'acL1';
 params.lags     = 0:70;
+params.convex_relax     = false;
 [A_acl1,g_acl1,e_acl1,out_params_acl1,S_acl1] = lpc_and_spec(w,params);
+
+params.convex_relax     = true;
+[A_acl1c,g_acl1c,e_acl1c,out_params_acl1c,S_acl1c] = lpc_and_spec(w,params);
 
 end
 

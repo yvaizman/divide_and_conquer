@@ -10,9 +10,14 @@
 % Input:
 % -----
 % xn: (L x 1) vector. The observed signal x(n).
-% M: positive integer. The order of the predictor.
-% lags: vector of positive integers. The lags over which we want to
+% params: strutc. Containing:
+% params.M: positive integer. The order of the predictor.
+% params.lags: vector of positive integers. The lags over which we want to
 %   minimize the absolute autocorrelation of the prediction error signal.
+% params.convex_relax: boolean. If true, use the convex relaxation of the
+%   optimization problem, in which the partial autocorrelation matrices are
+%   projected to the PSD code (by symmetrizing them, eigenvalue
+%   decomposing, zeroing the negative eigenvalues, and re-composing).
 %
 % Output:
 % ------
@@ -31,22 +36,29 @@
 %
 % ------------------------------------------------------------------------
 % Written by Yonatan Vaizman, 2014.
-function [a,en,report] = minimize_error_autocorrelation_L1(xn,M,lags)
+function [a,en,report] = minimize_error_autocorrelation_L1(xn,params)
 
-maxlag          = max(lags);
-ac              = autocorr(xn,M+maxlag);
-R0              = toeplitz(ac(1:(M+maxlag+1)));
-lags            = union(0,lags);
-lag0_ind        = find(lags==0);
-params          = struct('M',M,'lags',lags,'ac',ac,'R0',R0);
+if ~isfield(params,'convex_relax')
+    params.convex_relax     = false;
+end
+
+M               = params.M;
+maxlag          = max(params.lags);
+params.ac       = autocorr(xn,M+maxlag);
+params.R0       = toeplitz(params.ac(1:(M+maxlag+1)));
+params.lags     = union(0,params.lags);
+lag0_ind        = find(params.lags==0);
 [params]        = prepare_ac_matrices_and_vectors(params);
 
+if (params.convex_relax)
+    [params]    = project_ac_matrices_to_psd_cone(params);
+end
 % Initialize the filter:
-%aa              = zeros(M,1);
-%a               = [1;aa];
+aa              = zeros(M,1);
+a               = [1;aa];
 
-a               = lpc(xn,params.M)';
-aa              = a(2:end);
+% a               = lpc(xn,params.M)';
+% aa              = a(2:end);
 
 max_iter        = 200;
 etta            = 0.005;
@@ -60,7 +72,7 @@ for t = 1:max_iter
 %     ennorms(t)  = norm(en,1);
 %     ennorms(2,t)= norm(en,2);
 
-    lagi        = mod(t,length(lags)) + 1;
+    lagi        = mod(t,length(params.lags)) + 1;
     % Set the lags to focus on in this iteration:
     params.partial_lagis    = union(lag0_ind,lagi); 
     [loss,delta]= error_autocorrelation_L1(aa,params);
@@ -77,6 +89,22 @@ report.A            = A;
 report.deltanorms   = deltanorms;
 report.ennorms      = ennorms;
 report.losses       = losses;
+
+end
+
+function [params] = project_ac_matrices_to_psd_cone(params)
+
+params.RkM_per_lagi__original   = params.RkM_per_lagi;
+epsilon             = 0; %10e-6;
+
+for lagi = 1:length(params.RkM_per_lagi)
+    RkM             = params.RkM_per_lagi{lagi};
+    Rsym            = 0.5 * (RkM + RkM');
+    [V,D]           = eig(Rsym);
+    D(D<0)          = epsilon;
+    Rpsd            = V*D*V';
+    params.RkM_per_lagi{lagi}   = Rpsd;
+end
 
 end
 

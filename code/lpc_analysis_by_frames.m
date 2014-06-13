@@ -25,6 +25,8 @@
 % params.lags: vector of positive integers. If criterion 'acL1' is chosen,
 %    this parameter specifies for which lags the error-signal's
 %    autocorrelation function should be minimized (in absolute value).
+% params.convex_relax: boolean. If creterion 'acL1' is chosen, should we
+%   use the convex relaxation of it?
 %
 % Output:
 % ------
@@ -62,6 +64,9 @@ if ~isfield(params,'criterion')
 end
 if ~isfield(params,'lags')
     params.lags = 0:50;
+end
+if ~isfield(params,'convex_relax')
+    params.convex_relax = false;
 end
 
 if ischar(wav)
@@ -122,7 +127,7 @@ for fi = 1:n_frames
         case 'L2'
             a       = lpc(wframe,params.M);
         case 'acL1'
-            a       = minimize_error_autocorrelation_L1(wframe,params.M,params.lags);
+            a       = minimize_error_autocorrelation_L1(wframe,params);
         otherwise
             error(['Unsupported optimization criterion: ' params.criterion]);
     end
