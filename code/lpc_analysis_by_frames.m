@@ -99,6 +99,9 @@ e           = zeros(L,1);
 
 window      = hamming(params.winlen);
 for fi = 1:n_frames
+    if ~mod(fi,100)
+        disp(['frame ' num2str(fi)]);
+    end
     from    = (fi-1)*params.hoplen + 1;
     to      = from+params.winlen-1;
     if to > L

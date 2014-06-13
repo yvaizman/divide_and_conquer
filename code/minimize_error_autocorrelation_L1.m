@@ -36,11 +36,19 @@ function [a,en,report] = minimize_error_autocorrelation_L1(xn,M,lags)
 maxlag          = max(lags);
 ac              = autocorr(xn,M+maxlag);
 R0              = toeplitz(ac(1:(M+maxlag+1)));
-params          = struct('lags',lags,'ac',ac,'R0',R0);
+lags            = union(0,lags);
+lag0_ind        = find(lags==0);
+params          = struct('M',M,'lags',lags,'ac',ac,'R0',R0);
+[params]        = prepare_ac_matrices_and_vectors(params);
 
-aa              = zeros(M,1);
-a               = [1;aa];
-max_iter        = 7000;
+% Initialize the filter:
+%aa              = zeros(M,1);
+%a               = [1;aa];
+
+a               = lpc(xn,params.M)';
+aa              = a(2:end);
+
+max_iter        = 200;
 etta            = 0.005;
 A               = zeros(M+1,max_iter);
 deltanorms      = zeros(1,max_iter);
@@ -48,12 +56,13 @@ ennorms         = zeros(2,max_iter);
 losses          = zeros(1,max_iter);
 % Start iterating:
 for t = 1:max_iter
-    en          = filter(a,1,xn);
-    ennorms(t)  = norm(en,1);
-    ennorms(2,t)= norm(en,2);
+%     en          = filter(a,1,xn);
+%     ennorms(t)  = norm(en,1);
+%     ennorms(2,t)= norm(en,2);
 
     lagi        = mod(t,length(lags)) + 1;
-    params.lags = union(0,lags(lagi));
+    % Set the lags to focus on in this iteration:
+    params.partial_lagis    = union(lag0_ind,lagi); 
     [loss,delta]= error_autocorrelation_L1(aa,params);
     losses(t)   = loss;
     deltanorms(t)   = norm(delta);
@@ -63,6 +72,7 @@ for t = 1:max_iter
     A(:,t)      = a;
 end
 
+en                  = filter(a,1,xn);
 report.A            = A;
 report.deltanorms   = deltanorms;
 report.ennorms      = ennorms;
@@ -70,33 +80,51 @@ report.losses       = losses;
 
 end
 
-function [loss,deriv]   = error_autocorrelation_L1(aa,params)
+function [params] = prepare_ac_matrices_and_vectors(params)
 
-lags            = params.lags;
-ac              = params.ac;
-R0              = params.R0;
+M                       = params.M;
 
-M               = length(aa);
+params.RkM_per_lagi     = cell(1,length(params.lags));
+params.Rsym_per_lagi    = cell(1,length(params.lags));
+params.d_per_lagi       = cell(1,length(params.lags));
 
-loss            = 0;
-deriv           = zeros(size(aa));
-
-for k = lags
+for lagi = 1:length(params.lags)
+    k           = params.lags(lagi);
     % Calculate the autocorrelation vectors and matrices for lag k:
     plus_lags   = (k+1):(k+M);
-    dplus       = ac(1 + plus_lags); % r(k+1);r(k+2)...;r(k+M)
+    dplus       = params.ac(1 + plus_lags); % r(k+1);r(k+2)...;r(k+M)
     minus_lags  = (k-1):-1:(k-M);
-    dminus      = ac(1 + abs(minus_lags)); % r(k-1);r(k-2)...;r(k-M)
+    dminus      = params.ac(1 + abs(minus_lags)); % r(k-1);r(k-2)...;r(k-M)
 
-    RkM         = R0(1:M,(k+1):(k+M));
+    RkM         = params.R0(1:M,(k+1):(k+M));
 
     % Helper vector and matrix:
     d           = dplus + dminus;
     Rsym        = RkM + RkM';
+    
+    params.RkM_per_lagi{lagi}   = RkM;
+    params.Rsym_per_lagi{lagi}  = Rsym;
+    params.d_per_lagi{lagi}     = d;
+end
+
+end
+
+function [loss,deriv] = error_autocorrelation_L1(aa,params)
+
+loss            = 0;
+deriv           = zeros(size(aa));
+
+for lagi = params.partial_lagis
+    k           = params.lags(lagi);
+    
+    % Get the autocorrelation vectors and matrices for lag k:
+    RkM         = params.RkM_per_lagi{lagi};
+    Rsym        = params.Rsym_per_lagi{lagi};
+    d           = params.d_per_lagi{lagi};
 
     % Calculate the current excitation autocorrelation at lag k:
     % r_e(k)    = r_x(k) + d'*a + a'*RkM*a
-    re          = ac(1+k) + d'*aa + aa'*RkM*aa;
+    re          = params.ac(1+k) + d'*aa + aa'*RkM*aa;
 
     % Updaate the current loss:
     % J(a)      = |r_e(k)|
