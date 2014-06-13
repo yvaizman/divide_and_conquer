@@ -1,0 +1,197 @@
+
+\documentclass[journal,onecolumn]{IEEEtran}
+
+\usepackage{bbm}
+\newcommand{\field}[1]{\mathbb{#1}}
+
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{multirow}
+\usepackage[noadjust]{cite}
+\usepackage{bm}
+
+\usepackage{dsfont}
+\usepackage{yonatan}
+\def\I{\ensuremath{\mathds{1}}}
+\DeclareMathOperator*{\argmin}{argmin}
+
+\ifCLASSINFOpdf
+  \usepackage[pdftex]{graphicx}
+  % declare the path(s) where your graphic files are
+   \graphicspath{{../figures/}{../jpeg/}}
+  % and their extensions so you won't have to specify these with
+  % every instance of \includegraphics
+  \DeclareGraphicsExtensions{.pdf,.jpeg,.png}
+\else
+  % \usepackage[dvips]{graphicx}
+  % declare the path(s) where your graphic files are
+  % \graphicspath{{../eps/}}
+  % \DeclareGraphicsExtensions{.eps}
+\fi
+\usepackage{array}
+%\usepackage[tight,footnotesize]{subfigure}
+\usepackage{subcaption}
+
+% correct bad hyphenation here
+\hyphenation{op-tical net-works semi-conduc-tor}
+
+\usepackage{color}
+%\usepackage{hyperref}
+\usepackage{cleveref}
+
+\newcommand{\yn}[1]{\textcolor{red}{YV NOTE:\@#1}}
+
+\begin{document}
+%
+\title{New Optimization Criteria for Fitting LTI Filters for Audio Signals}
+\author{Yonatan~Vaizman}
+
+%\markboth{Journal of \LaTeX\ Class Files,~Vol.~6, No.~1, January~2007}%
+%\markboth{Transactions on Audio Speech and Language Processing}%
+%{Vaizman \MakeLowercase{\textit{et al.}}: Codebook based Audio Feature Representation for Music Information Retrieval}
+
+\maketitle
+
+\section{Excitation-Filter model}
+We model the generation of an observed time signal $x(n)$ as excitation signal $e(n)$ passed through an all-pole filter $A(z)$.
+The underlying model's excitation signal $e(n)$ can also be viewed as a prediction error signal of linear forward prediction on the observed signal $x(n)$, when the prediction coefficients are $-a_1,-a_2, \ldots, -a_M$: the prediction of the signal at time $n$ is 
+\begin{align*}
+\widehat{x}(n)=\sum\limits_{k=1}^M{-a_k x(n-k)}
+\end{align*}
+and the prediction error is $e(n) = x(n) - \widehat{x}(n)$. $e(n)$ can also be described as the output of a FIR filter, with coefficients $1,a_1,a_2,\ldots,a_M$, applied to the observed signal:
+
+\begin{align*}
+e(n) = & ({1,\underline{a}^T}) \underline{x}_{M+1}(n) \\
+     = & x(n) + \underline{a}^T \underline{x}_{M}(n-1) \\
+     = & x(n) + \sum\limits_{k=1}^M{a_k x(n-k)}
+\end{align*}
+
+Linear predictive coding (LPC) framework aims to optimize some objective over the choice of the all-pole filter $A(z)$, meaning over the choice of the filter coefficient vector $\underline{a}\in \field{R}^M$.
+
+\subsection{Useful definitions}
+Lets define as $r(m)$ the autocorrelation of the observed signal ($x(n)$) at lag $m$:
+\begin{align*}
+r(m) = E[x(n)x(n-m)].
+\end{align*}
+Lets also define as $R_M$ (or $R$ for short) the autocorrelation matrix of the observed signal, which is a symmetric, PSD, Toeplitz matrix of dimension $M \times M$:
+\begin{align*}
+R_M = &
+\begin{bmatrix}
+r(0) & r(1) & r(2) & \ldots & r(M-1) \\
+r(-1) & r(0) & r(1) & \ldots & r(M-2) \\
+\vdots & & & & \vdots \\
+r(1-M) & r(2-M) & r(3-M) & \ldots & r(0) \\
+\end{bmatrix}
+ = &
+\begin{bmatrix}
+r(0) & r(1) & r(2) & \ldots & r(M-1) \\
+r(1) & r(0) & r(1) & \ldots & r(M-2) \\
+\vdots & & & & \vdots \\
+r(M-1) & r(M-2) & r(M-3) & \ldots & r(0) \\
+\end{bmatrix}.
+\end{align*}
+Lets also define as $\underline{d}_M$ (or $\underline{d}$ for short) the vector of cross correlation between the predicted variable and the variables used for the linear prediction. In our case (forward prediction in a time series) the values of this cross-correlation vector are taken from the autocorrelation of the observed signal:
+\begin{align*}
+d_M =
+\begin{bmatrix}
+r(1) \\
+r(2) \\
+\vdots \\
+r(M) \\
+\end{bmatrix}.
+\end{align*}
+
+\section{Mean squared error criterion}
+The traditional approach is to minimize the mean squared error signal:
+\begin{align*}
+\min\limits_{\underline{a}}E[|e(n)|^2].
+\end{align*}
+This approach was studied a lot and used a lot. The problem is convex --- a quadratic programming problem --- and it has a unique solution that should satisfy the Yule-Walker equations:
+\begin{align*}
+R \underline{a} = \underline{d}.
+\end{align*}
+
+If $R$ has no zero eigenvalues (if there is still some error with best order-$M$ linear prediction) then it is also invertible and the solution can be calculated by inverting it:
+\begin{align*}
+\underline{a} = R^{-1} \underline{d}.
+\end{align*}
+The complexity of the matrix-inversion approach is $O(M^3)$.
+
+The Levinson-Durbin algorithm (LDA) is an order-recursive algorithm to find the optimal order-$1$ linear filter, then the optimal order-$2$ linear filter, \ldots up to the optimal order-$M$ linear filter. It is an efficient algorithm, which is also based on the autocorrelation $r(m)$ but doesn't involve inverting the correlation matrix. It's complexity is $O(M^2)$.
+
+
+
+The mean squared error approach has many advantages:
+\begin{itemize}
+  \item Not only is this problem convex, it also has a closed form solution --- the Yule-Walker normal equations (no need for any iterative algorithm to converge).
+  \item Not only it has a closed form solution, it also has an even more efficient method to solve --- Levinson-Durbin algorithm.
+  \item The optimal filter is guaranteed to be minimum phase, so both the IIR all-pole filter and its inverse --- the FIR all-zero filter --- are stable filters.
+  \item The scheme lends itself nicely to lattice filters and allows using a modular filter structure, and representation of the filter using reflection coefficients.
+  \item The scheme lends itself nicely to adaptive filtering, with the LMS algorithm for filtering and tracking slow changes.
+\end{itemize}
+
+With all these strengths, it is possible that the criterion of minimizing mean squared error (or $L2$-norm of the excitation signal) is not fitting for modeling generation of musical sounds. MSE fits well when assuming the excitation signal is a Gaussian white noise. However, to model pitched sounds we would like to assume the excitation to be a ``colorless'' periodic signal. The gross shape of the spectrum should be colorless, but there should be very specific loci of energy, in a fundamental frequency and its integer multiples. We would like the excitation signal to resemble a pulse train, to have a comb-shape spectrum and autocorrelation function.
+
+\section{Mean absolute error}
+
+\section{Absolute error autocorrelation}
+If we want the excitation signal to resemble a pulse train, we may want to require it to have no correlation between close time points (up until lags that are reasonable for pitch periods). To require low-magnitude error-correlation in lag $l$ we'll minimize the following cost function:
+\begin{align*}
+J^l(\underline{a}) = & \left| E\left[ e(n)e(n-l) \right] \right| \\
+= & \left| E\left[ (x(n)+\underline{a}^T\underline{x}_M(n-1))(x(n-l)+\underline{a}^T\underline{x}_M(n-l-1)) \right] \right| \\
+= & \left| E\left[ x(n)x(n-l) \right] + E\left[ \underline{a}^T\underline{x}_M(n-1)x(n-l) \right] + E\left[ \underline{a}^T\underline{x}_M(n-l-1)x(n) \right] + E\left[ \underline{a}^T\underline{x}_M(n-1)\underline{x}_M^T(n-l-1)\underline{a} \right] \right| \\
+= & \left| r(l) + \underline{a}^T\begin{bmatrix} r(l-1) \\ r(l-2) \\ \vdots \\ r(l-M) \end{bmatrix}  + \underline{a}^T\begin{bmatrix} r(l+1) \\ r(l+2) \\ \vdots \\ r(l+M) \end{bmatrix} + \underline{a}^T \begin{bmatrix}r(l) & r(l+1) & \ldots & r(l+M-1) \\ r(l-1) & r(l) & \ldots & r(l+M-2) \\ \vdots & & & \\ r(l-M+1) & r(l-M+2) & \ldots & r(l) \end{bmatrix} \underline{a} \right|.
+\end{align*}
+
+To simplify the notation, lets define some more variables:
+\begin{align*}
+\underline{d}_M^{l-} = \begin{bmatrix} r(l-1) \\ r(l-2) \\ \vdots \\ r(l-M) \end{bmatrix} \\
+\underline{d}_M^{l+} = \begin{bmatrix} r(l+1) \\ r(l+2) \\ \vdots \\ r(l+M) \end{bmatrix} \\
+\end{align*}
+\begin{align*}
+R_M^l = 
+\begin{bmatrix}
+r(l) & r(l+1) & \ldots & r(l+M-1) \\ 
+r(l-1) & r(l) & \ldots & r(l+M-2) \\ 
+\vdots & & & \\ 
+r(l-M+1) & r(l-M+2) & \ldots & r(l) \\
+\end{bmatrix}
+\end{align*}
+
+Lets notice that the matrix $R_M^l$ is still in Toeplitz structure, but it is no longer symmetric or positive semi-definite.
+Using these notations the cost function we present can be expressed as:
+\begin{align*}
+J^l(\underline{a}) = \left| r(l) + \underline{a}^T\left( \underline{d}_M^{l-} + \underline{d}_M^{l+} \right) + \underline{a}^T R_M^l\underline{a} \right|.
+\end{align*}
+
+The optimization problem is now:
+\begin{align*}
+\min\limits_{\underline{a}}{J^l(\underline{a})}.
+\end{align*}
+
+If we didn't require the absolute value in the cost function, we would be able to get a closed form solution, similar to the MSE minimization solution: $\underline{a} = \left( R_M^l + R_M^{lT} \right)^{-1}\left( \underline{d}_M^{l-} + \underline{d}_M^{l+} \right)$. However, such a criterion might find a solution that creates an excitation signal with strong negative correlation at lag $l$, since we wish to minimize it. This is not what we want; we want the correlation to be close to zero. With the absolute value we can no longer search for a point with zero gradient, but we can still use the gradient for iterative improvements.
+
+\begin{align*}
+\frac{\partial J^l}{\partial \underline{a}} = & sign(\cdot)\frac{\partial \cdot}{\partial \underline{a}} \\
+ = & sign\left( r(l) + \underline{a}^T\left( \underline{d}_M^{l-} + \underline{d}_M^{l+} \right) + \underline{a}^T R_M^l\underline{a} \right) \left[ \underline{d}_M^{l-} + \underline{d}_M^{l+} + \left( R_M^l + R_M^{lT} \right)\underline{a} \right].
+\end{align*}
+
+We can use this derivative in a gradient descent way in order to minimize the cost. We shouldn't expect to reach a fix point in the filter parameters, where the derivative is zero, but we can attempt to get convergence of the cost value to a locally minimal cost.
+
+Using this cost function we can define a composite cost function to require close-to-zero error correlation in multiple lags:
+\begin{align*}
+J^{L}(\underline{a}) = \sum\limits_{l\in L}{J^l(\underline{a})}
+\end{align*}
+and the derivative of the composite cost function will be a sum of the individual components' derivatives:
+\begin{align*}
+\frac{\partial J^L}{\underline{a}} = \sum\limits_{l\in L}{\frac{\partial J^l}{\underline{a}}}.
+\end{align*}
+A reasonable set of lags for the criterion can be of the form $L = \{ 0,1,\ldots, l_{max} \}$.
+
+With a stochastic gradient descent (SGD) approach we can optimize the filter for a composite cost function more quickly by selecting a single lag to optimize $J^l$ for in every iteration. As traditional SGD samples a subset (minibatch) of examples from the pool of examples and updates the parameters based on the subset, we can select a component of the sum-cost function and update the parameters over all the examples (the entire signal segment).
+
+% that's all folks
+\end{document}
+
+
