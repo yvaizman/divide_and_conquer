@@ -14,7 +14,14 @@
 % params.M: positive integer. The order of the predictor.
 % params.lags: vector of positive integers. The lags over which we want to
 %   minimize the absolute autocorrelation of the prediction error signal.
-% params.convex_relax: boolean. If true, use the convex relaxation of the
+% params.version: string. Either 'nonsymmetric', 'symmetric' or 'convex'.
+%   If 'symmetric' is selected, use the symmetric
+%   (not necessarily PSD) versions of the autocorrelation matrices. 
+%   This version of the problem is equivalent to the original, 
+%   once we assume that we are dealing with autocorrelations and that they 
+%   are symmetric. In this version,
+%   instead of R^l we use 0.5(R^l + R^{-l})=0.5(R^l + R^l^T).
+%   If 'convex' is selected, use the convex relaxation of the
 %   optimization problem, in which the partial autocorrelation matrices are
 %   projected to the PSD code (by symmetrizing them, eigenvalue
 %   decomposing, zeroing the negative eigenvalues, and re-composing).
@@ -38,43 +45,59 @@
 % Written by Yonatan Vaizman, 2014.
 function [a,en,report] = minimize_error_autocorrelation_L1(xn,params)
 
-if ~isfield(params,'convex_relax')
-    params.convex_relax     = false;
+if ~isfield(params,'version')
+    params.version  = 'nonsymmetric';
+end
+if ~isfield(params,'max_iter')
+    params.max_iter         = 200;
 end
 
 M               = params.M;
 maxlag          = max(params.lags);
-params.ac       = autocorr(xn,M+maxlag);
+power           = mean(xn.^2);
+params.ac       = power*autocorr(xn,M+maxlag);
 params.R0       = toeplitz(params.ac(1:(M+maxlag+1)));
 params.lags     = union(0,params.lags);
 lag0_ind        = find(params.lags==0);
 [params]        = prepare_ac_matrices_and_vectors(params);
 
-if (params.convex_relax)
-    [params]    = project_ac_matrices_to_psd_cone(params);
-end
 % Initialize the filter:
-aa              = zeros(M,1);
-a               = [1;aa];
+switch params.version
+    case 'nonsymmetric'
+        init_params             = params;
+        init_params.version     = 'convex';
+        init_params.max_iter    = 70;
+        [a,init_e,init_report]  = minimize_error_autocorrelation_L1(xn,init_params);
+        aa                      = a(2:end);
+        etta                    = 0.01;
+    case 'symmetric'
+        init_params             = params;
+        init_params.version     = 'convex';
+        init_params.max_iter    = 70;
+        [a,init_e,init_report]  = minimize_error_autocorrelation_L1(xn,init_params);
+        aa                      = a(2:end);
+        [params]                = use_symmetric_ac_matrices(params);
+        etta                    = 0.01;
+    case 'convex'
+        [params]                = project_ac_matrices_to_psd_cone(params);
+        aa                      = zeros(M,1);
+        a                       = [1;aa];
+        etta                    = 0.005;
+end
 
-% a               = lpc(xn,params.M)';
-% aa              = a(2:end);
-
-max_iter        = 200;
-etta            = 0.005;
-A               = zeros(M+1,max_iter);
-deltanorms      = zeros(1,max_iter);
-ennorms         = zeros(2,max_iter);
-losses          = zeros(1,max_iter);
+A               = zeros(M+1,params.max_iter);
+deltanorms      = zeros(1,params.max_iter);
+ennorms         = zeros(2,params.max_iter);
+losses          = zeros(1,params.max_iter);
 % Start iterating:
-for t = 1:max_iter
+for t = 1:params.max_iter
 %     en          = filter(a,1,xn);
 %     ennorms(t)  = norm(en,1);
 %     ennorms(2,t)= norm(en,2);
 
     lagi        = mod(t,length(params.lags)) + 1;
     % Set the lags to focus on in this iteration:
-    params.partial_lagis    = union(lag0_ind,lagi); 
+    params.partial_lagis    = 1:length(params.lags); %union(lag0_ind,lagi); 
     [loss,delta]= error_autocorrelation_L1(aa,params);
     losses(t)   = loss;
     deltanorms(t)   = norm(delta);
@@ -89,6 +112,18 @@ report.A            = A;
 report.deltanorms   = deltanorms;
 report.ennorms      = ennorms;
 report.losses       = losses;
+report.used_params  = params;
+
+end
+
+function [params] = use_symmetric_ac_matrices(params)
+
+params.RkM_per_lagi__nonSymmetric   = params.RkM_per_lagi;
+for lagi = 1:length(params.RkM_per_lagi)
+    RkM             = params.RkM_per_lagi{lagi};
+    Rsym            = 0.5 * (RkM + RkM');
+    params.RkM_per_lagi{lagi}   = Rsym;
+end
 
 end
 

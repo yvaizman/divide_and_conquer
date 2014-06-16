@@ -25,8 +25,10 @@
 % params.lags: vector of positive integers. If criterion 'acL1' is chosen,
 %    this parameter specifies for which lags the error-signal's
 %    autocorrelation function should be minimized (in absolute value).
-% params.convex_relax: boolean. If creterion 'acL1' is chosen, should we
-%   use the convex relaxation of it?
+% params.version: string. If creterion 'acL1' is chosen, this parameter
+%   should be either 'nonsymmetric' (default), 'symmetric' for the
+%   symmetric autocorrelation matrices version, or 'convex' for the convex
+%   relaxation of the probelm.
 %
 % Output:
 % ------
@@ -38,7 +40,7 @@
 %
 % ------------------------------------------------------------------------
 % Written by Yonatan Vaizman, 2014.
-function [A,g,e,params] = lpc_analysis_by_frames(wav,params)
+function [A,g,e,params,sum_frame] = lpc_analysis_by_frames(wav,params)
 
 % Default values for parameters:
 if ~isfield(params,'sr')
@@ -64,9 +66,6 @@ if ~isfield(params,'criterion')
 end
 if ~isfield(params,'lags')
     params.lags = 0:50;
-end
-if ~isfield(params,'convex_relax')
-    params.convex_relax = false;
 end
 
 if ischar(wav)
@@ -102,6 +101,7 @@ A           = [ones(1,n_frames);zeros(params.M,n_frames)];
 g           = zeros(1,n_frames);
 e           = zeros(L,1);
 
+sum_frame   = zeros(params.winlen,1);
 window      = hamming(params.winlen);
 for fi = 1:n_frames
     if ~mod(fi,100)
@@ -120,6 +120,10 @@ for fi = 1:n_frames
     if var(wframe) <= epsilon
         % Leave the default filter, gain and error:
         continue;
+    end
+
+    if length(wframe) == length(sum_frame)
+        sum_frame   = sum_frame + wframe;
     end
     
     % Estimate the linear prediction coefficients:
