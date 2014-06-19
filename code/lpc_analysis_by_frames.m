@@ -20,6 +20,7 @@
 % params.winlen: Positive integer. Size of each frame.
 % params.preemph: vector. The coefficients of the pre-emphasis FIR filter 
 %    to be used (set to 1 if no pre-emphasis is desired).
+% params.use_window: boolean. If true, use hamming window for each frame.
 % params.criterion: string. The objective to minimize for the
 %    prediction-error signal. Either 'L2' or 'acL1'.
 % params.lags: vector of positive integers. If criterion 'acL1' is chosen,
@@ -32,15 +33,16 @@
 %
 % Output:
 % ------
-% A: ((M+1) x n_frames) matrix. The fitted all-pole filters. Each column
+% results. struct, containing:
+% results.A: ((M+1) x n_frames) matrix. The fitted all-pole filters. Each column
 %    has the coefficients of a frame's fitted filter (direct form).
-% g: (1 x n_frames) vector. The gain of every frame.
-% e: (L x 1) vector. The prediction-error/excitation/residual signal.
-% params: Struct with the parameters used.
+% results.g: (1 x n_frames) vector. The gain of every frame.
+% results.e: (L x 1) vector. The prediction-error/excitation/residual signal.
+% results.params: Struct with the parameters used.
 %
 % ------------------------------------------------------------------------
 % Written by Yonatan Vaizman, 2014.
-function [A,g,e,params,sum_frame] = lpc_analysis_by_frames(wav,params)
+function [results] = lpc_analysis_by_frames(wav,params)
 
 % Default values for parameters:
 if ~isfield(params,'sr')
@@ -51,6 +53,9 @@ if ~isfield(params,'M')
 end
 if ~isfield(params,'do_preemph')
 	params.do_preemph = true;
+end
+if ~isfield(params,'use_window')
+    params.use_window = true;
 end
 if ~isfield(params,'hoplen')
 	params.hoplen = 1024;
@@ -68,6 +73,11 @@ if ~isfield(params,'lags')
     params.lags = 0:50;
 end
 
+%% Parameters for pitch estimation:
+yin_params.sr       = params.sr;
+yin_params.wsize    = params.hoplen;
+yin_params.hop      = params.hoplen;
+
 if ischar(wav)
     wav_file    = wav;
     [w,sr_orig] = wavread(wav_file);
@@ -79,9 +89,9 @@ end
 
 if params.do_preemph
     % Pre-emphasize:
-    w           = filter(params.preemph,1,w);
+    w               = filter(params.preemph,1,w);
 else
-    params.preemph = 1;
+    params.preemph  = 1;
 end
 
 L           = length(w);
@@ -101,8 +111,11 @@ A           = [ones(1,n_frames);zeros(params.M,n_frames)];
 g           = zeros(1,n_frames);
 e           = zeros(L,1);
 
-sum_frame   = zeros(params.winlen,1);
+aperiod     =  ones(1,n_frames);
+period      = -ones(1,n_frames);
+
 window      = hamming(params.winlen);
+window      = window / mean(window.^2);
 for fi = 1:n_frames
     if ~mod(fi,100)
         disp(['frame ' num2str(fi)]);
@@ -112,24 +125,28 @@ for fi = 1:n_frames
     if to > L
         to  = L;
         window  = hamming(to-from+1);
+        window  = window / mean(window.^2);
     end
     frame   = w(from:to);
-    wframe  = frame .* window;
+    if params.use_window
+        wframe  = frame .* window;
+    else
+        wframe  = frame;
+    end
     % Simple check if there is any power:
     epsilon = thresh;
     if var(wframe) <= epsilon
         % Leave the default filter, gain and error:
         continue;
     end
-
-    if length(wframe) == length(sum_frame)
-        sum_frame   = sum_frame + wframe;
-    end
     
     % Estimate the linear prediction coefficients:
     switch (params.criterion)
         case 'L2'
             a       = lpc(wframe,params.M);
+        case 'L1'
+            a       = burg_l1_minimization(wframe,params);
+%            a       = minimize_absolute_error(wframe,params);
         case 'acL1'
             a       = minimize_error_autocorrelation_L1(wframe,params);
         otherwise
@@ -142,9 +159,24 @@ for fi = 1:n_frames
     resid   = filter(a,1,wframe);
     %%
     gain    = sqrt(mean(resid.^2));
+    gain    = max([gain,thresh]);
     g(fi)   = gain;
-    ei      = resid / gain;
+    ei      = resid;
+%    ei      = ei / gain;
     e(from:to)  = e(from:to) + ei;
+    
+    %% Estimate the pitch from the prediction error signal of the frame:
+    yinr            = yin(ei,yin_params);
+    aperiod(fi)     = yinr.ap(1);
+    period(fi)      = yinr.period(1);
 end
+
+results.A       = A;
+results.e       = e;
+results.g       = g;
+results.params  = params;
+resutls.aperiod = aperiod;
+results.period  = period;
+results.f0      = params.sr / period;
 
 end

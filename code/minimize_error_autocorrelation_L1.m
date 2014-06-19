@@ -1,4 +1,4 @@
-% function [a,en,report] = minimize_error_autocorrelation_L1(xn,M,lags)
+% function [a,en,report] = minimize_error_autocorrelation_L1(xn,params)
 %
 % Find optimal linear prediction parameters, such that the prediction error
 % signal's autocorrelation has minimal L1-norm (over the desired lags).
