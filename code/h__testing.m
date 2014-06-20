@@ -23,20 +23,20 @@ w               = resample(w,params.sr,sr_orig);
 seg             = w(50001:55000);
 wseg            = hamming(length(seg)).*seg;
 
-yinr_xn = estimate_pitch_track(w,params);
-S = spectrogram(w,params.winlen,params.hoplen,params.winlen);
+%yinr_xn = estimate_pitch_track(w,params);
+%S = spectrogram(w,params.winlen,params.hoplen,params.winlen);
 
 params.criterion    = 'L2';
 params.use_window   = true;
-[res_l2w,S_l2w,Se_l2w] = lpc_and_spec(w,params);
+%[res_l2w,S_l2w,Se_l2w] = lpc_and_spec(w,params);
 
 params.criterion    = 'L1';
 params.use_window   = true;
-[A_l1w,g_l1w,e_l1w,out_params_l1w,S_l1w,Se_l1w] = lpc_and_spec(w,params);
+[res_l1w,S_l1w,Se_l1w] = lpc_and_spec(w,params);
 
 params.criterion    = 'L1';
 params.use_window   = false;
-[A_l1,g_l1,e_l1,out_params_l1,S_l1,Se_l1,yinr_l1] = lpc_and_spec(w,params);
+[res_l1,S_l1,Se_l1] = lpc_and_spec(w,params);
 
 params.criterion    = 'acL1';
 params.version      = 'nonsymmetric';
@@ -61,8 +61,8 @@ function [r] = estimate_pitch_track(w,params)
 
 addpath(genpath('C:\Users\yonatan\Documents\ucsd\tools\yin_changed\'));
 yin_params.sr       = params.sr;
-%yin_params.hop      = 1;
-yin_params.wsize    = params.winlen - 10;
+yin_params.hop      = 64;
+yin_params.wsize    = 0.75*params.winlen;
 
 r = yin(w,yin_params);
 

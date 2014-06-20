@@ -39,6 +39,10 @@
 % results.g: (1 x n_frames) vector. The gain of every frame.
 % results.e: (L x 1) vector. The prediction-error/excitation/residual signal.
 % results.params: Struct with the parameters used.
+% results.period: (1 x n_frames) vector. Estimated period (in samples) for
+%   each frame, or -1 if no estimate is available.
+% results.f0: (1 x n_frames) vector. Estimated fundamental frequency (in
+%   Hz) for each frame, or -1 in no estimate is available.
 %
 % ------------------------------------------------------------------------
 % Written by Yonatan Vaizman, 2014.
@@ -75,8 +79,8 @@ end
 
 %% Parameters for pitch estimation:
 yin_params.sr       = params.sr;
-yin_params.wsize    = params.hoplen;
-yin_params.hop      = params.hoplen;
+yin_params.wsize    = round(0.75*params.winlen);
+yin_params.hop      = 64;
 
 if ischar(wav)
     wav_file    = wav;
@@ -112,7 +116,7 @@ g           = zeros(1,n_frames);
 e           = zeros(L,1);
 
 aperiod     =  ones(1,n_frames);
-period      = -ones(1,n_frames);
+periods     = -ones(1,n_frames);
 
 window      = hamming(params.winlen);
 window      = window / mean(window.^2);
@@ -167,16 +171,29 @@ for fi = 1:n_frames
     
     %% Estimate the pitch from the prediction error signal of the frame:
     yinr            = yin(ei,yin_params);
-    aperiod(fi)     = yinr.ap(1);
-    period(fi)      = yinr.period(1);
+    apinds          = ~isnan(yinr.ap);
+    if sum(apinds) > 0
+        aperiod(fi) = mean(yinr.ap(apinds));
+    end
+    perinds         = ~isnan(yinr.period);
+    if sum(perinds) > 0
+        periods(fi) = mean(yinr.period(perinds));
+    end
+    
 end
+
+f0              = -ones(1,n_frames);
+pos_per         = periods > 0;
+f0(pos_per)     = params.sr ./ periods(pos_per);
+
+results         = params;
 
 results.A       = A;
 results.e       = e;
 results.g       = g;
 results.params  = params;
-resutls.aperiod = aperiod;
-results.period  = period;
-results.f0      = params.sr / period;
+results.aperiod = aperiod;
+results.periods = periods;
+results.f0      = f0;
 
 end
