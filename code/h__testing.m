@@ -1,17 +1,21 @@
 function [] = h__testing()
 
+yin_path        ='C:\Users\yonatan\Documents\ucsd\tools\yin_changed\';
 data_supdir     = 'C:\Users\Yonatan\Documents\ucsd\music_data\UIowa\wav';
 
 %wav_file        = [data_supdir,filesep,'piano\piano\Piano.ff.Eb4.wav'];
 %wav_file        = [data_supdir,filesep,'strings\violin\Violin.arco.ff.sulE.C6Gb7.wav'];
 %wav_file        = [data_supdir,filesep,'woodwind\EbAltoSaxophone\AltoSax.NoVib.ff.C5Ab5.wav'];
-wav_file        = [data_supdir,filesep,'woodwind\BbSopranoSaxophone\SopSax.NoVib.ff.C5B5.wav'];
+%wav_file        = [data_supdir,filesep,'woodwind\BbSopranoSaxophone\SopSax.NoVib.ff.C5B5.wav'];
+wav_file        = [data_supdir,filesep,'woodwind\BbClarinet\BbClar.ff.C4B4.wav'];
 
 params.sr       = 22050;
 params.M        = 20;
 params.hoplen   = 1024;
 params.winlen   = 2*params.hoplen;
 params.do_preemph = true;
+params.yin_path = yin_path;
+
 params.lags     = 0:40;
 params.version  = 'nonsymmetric';
 
@@ -59,7 +63,7 @@ end
 
 function [r] = estimate_pitch_track(w,params)
 
-addpath(genpath('C:\Users\yonatan\Documents\ucsd\tools\yin_changed\'));
+%addpath(genpath('C:\Users\yonatan\Documents\ucsd\tools\yin_changed\'));
 yin_params.sr       = params.sr;
 yin_params.hop      = 64;
 yin_params.wsize    = 0.75*params.winlen;

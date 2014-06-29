@@ -30,6 +30,8 @@
 %   should be either 'nonsymmetric' (default), 'symmetric' for the
 %   symmetric autocorrelation matrices version, or 'convex' for the convex
 %   relaxation of the probelm.
+% params.do_yin: boolean. Should we estimate pitch for frames (using YIN)?
+% params.yin_path: string. If params.do_yin==true must provide YIN path.
 %
 % Output:
 % ------
@@ -76,11 +78,21 @@ end
 if ~isfield(params,'lags')
     params.lags = 0:50;
 end
+if ~isfield(params,'do_yin')
+    params.do_yin = false;
+end
+if params.do_yin && ~isfield(params,'yin_path')
+    error('Must provide path to YIN pitch estimation in params.yin_path');
+end
+
 
 %% Parameters for pitch estimation:
-yin_params.sr       = params.sr;
-yin_params.wsize    = round(0.75*params.winlen);
-yin_params.hop      = 64;
+if params.do_yin
+    addpath(genpath(params.yin_path));
+    yin_params.sr       = params.sr;
+    yin_params.wsize    = round(0.75*params.winlen);
+    yin_params.hop      = 64;
+end
 
 if ischar(wav)
     wav_file    = wav;
@@ -89,6 +101,10 @@ if ischar(wav)
     w           = resample(w,params.sr,sr_orig);
 else
     w           = wav;
+    [d1,d2]     = size(w);
+    if d2 ~= 1
+        error('Given wave in wav must be a (L x 1) dimensioned vector');
+    end
 end
 
 if params.do_preemph
@@ -121,9 +137,9 @@ periods     = -ones(1,n_frames);
 window      = hamming(params.winlen);
 window      = window / mean(window.^2);
 for fi = 1:n_frames
-    if ~mod(fi,100)
-        disp(['frame ' num2str(fi)]);
-    end
+%     if ~mod(fi,100)
+%         disp(['frame ' num2str(fi)]);
+%     end
     from    = (fi-1)*params.hoplen + 1;
     to      = from+params.winlen-1;
     if to > L
@@ -166,18 +182,20 @@ for fi = 1:n_frames
     gain    = max([gain,thresh]);
     g(fi)   = gain;
     ei      = resid;
-%    ei      = ei / gain;
+    ei      = ei / gain;
     e(from:to)  = e(from:to) + ei;
     
     %% Estimate the pitch from the prediction error signal of the frame:
-    yinr            = yin(ei,yin_params);
-    apinds          = ~isnan(yinr.ap);
-    if sum(apinds) > 0
-        aperiod(fi) = mean(yinr.ap(apinds));
-    end
-    perinds         = ~isnan(yinr.period);
-    if sum(perinds) > 0
-        periods(fi) = mean(yinr.period(perinds));
+    if params.do_yin
+        yinr            = yin(ei,yin_params);
+        apinds          = ~isnan(yinr.ap);
+        if sum(apinds) > 0
+            aperiod(fi) = mean(yinr.ap(apinds));
+        end
+        perinds         = ~isnan(yinr.period);
+        if sum(perinds) > 0
+            periods(fi) = mean(yinr.period(perinds));
+        end
     end
     
 end

@@ -39,6 +39,12 @@ end
 L           = length(e);
 n_frames    = length(g);
 
+% % Prepare a smoother gain wave:
+% gains       = reshape(repmat(g,params.hoplen,1),L,1);
+% smoother    = hamming(100);
+% smoother    = smoother / sqrt(mean(smoother.^2));
+% gains       = filter(smoother,1,gains);
+
 synth_ge    = zeros(L,1);
 synth_w     = zeros(L,1);
 window      = hamming(params.winlen);
@@ -56,6 +62,8 @@ for fi = 1:n_frames
     a       = A(:,fi);
     gain    = g(fi);
     geframe = gain * eframe;
+%    gframe  = gains(from:to);
+%    geframe = gframe .* eframe;
     sframe  = filter(1,a,geframe);
     wframe  = sframe .* window;
     
@@ -64,6 +72,6 @@ for fi = 1:n_frames
 end
 
 % De-emphasize the pre-emphasis that was done:
-synth_w     = filter(1,params.preemph,synth_w);
+%synth_w     = filter(1,params.preemph,synth_w);
 
 end

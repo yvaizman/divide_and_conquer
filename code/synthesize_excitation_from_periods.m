@@ -22,6 +22,7 @@ e           = zeros(L,1);
 leftover    = 0;
 for fi = 1:n_frames
     period          = periods(fi);
+    period          = round(period); % to create consistent lags between pulses
     if period <= 0
         frame       = randn(framelen,1);
     else
@@ -34,6 +35,10 @@ for fi = 1:n_frames
         frame       = zeros(framelen,1);
         frame(inds) = 1;
     end
+    
+    % Normalize frame to have unit power:
+    gain            = sqrt(mean(frame.^2));
+    frame           = frame / gain;
     
     % Update the frame:
     fr_start    = (fi-1)*framelen + 1;
