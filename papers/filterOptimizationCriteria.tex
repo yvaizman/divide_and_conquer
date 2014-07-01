@@ -55,7 +55,7 @@
 
 \section{Excitation-Filter model}
 We model the generation of an observed time signal $x(n)$ as excitation signal $e(n)$ passed through an all-pole filter $A(z)$.
-The underlying model's excitation signal $e(n)$ can also be viewed as a prediction error signal of linear forward prediction on the observed signal $x(n)$, when the prediction coefficients are $-a_1,-a_2, \ldots, -a_M$: the prediction of the signal at time $n$ is 
+The underlying model's excitation signal $e(n)$ can also be viewed as a prediction error signal of linear forward prediction on the observed signal $x(n)$, when the prediction coefficients are $-a_1,-a_2, \ldots, -a_M$: the prediction of the signal at time $n$ is
 \begin{align*}
 \widehat{x}(n)=\sum\limits_{k=1}^M{-a_k x(n-k)}
 \end{align*}
@@ -150,11 +150,11 @@ To simplify the notation, lets define some more variables:
 \underline{d}_M^{l+} = \begin{bmatrix} r(l+1) \\ r(l+2) \\ \vdots \\ r(l+M) \end{bmatrix} \\
 \end{align*}
 \begin{align*}
-R_M^l = 
+R_M^l =
 \begin{bmatrix}
-r(l) & r(l+1) & \ldots & r(l+M-1) \\ 
-r(l-1) & r(l) & \ldots & r(l+M-2) \\ 
-\vdots & & & \\ 
+r(l) & r(l+1) & \ldots & r(l+M-1) \\
+r(l-1) & r(l) & \ldots & r(l+M-2) \\
+\vdots & & & \\
 r(l-M+1) & r(l-M+2) & \ldots & r(l) \\
 \end{bmatrix}
 \end{align*}
@@ -189,7 +189,51 @@ and the derivative of the composite cost function will be a sum of the individua
 \end{align*}
 A reasonable set of lags for the criterion can be of the form $L = \{ 0,1,\ldots, l_{max} \}$.
 
+\subsection{How to solve}
+\subsubsection{Stochastic gradient descent}
 With a stochastic gradient descent (SGD) approach we can optimize the filter for a composite cost function more quickly by selecting a single lag to optimize $J^l$ for in every iteration. As traditional SGD samples a subset (minibatch) of examples from the pool of examples and updates the parameters based on the subset, we can select a component of the sum-cost function and update the parameters over all the examples (the entire signal segment).
+\subsubsection{Convex relaxation}
+We can observe the cost function:
+\begin{align*}
+J^{L}(\underline{a}) = \sum\limits_{l\in L}{|r(l) + \underline{a}^T\left( \underline{d}_M^{l-} + \underline{d}_M^{l+} \right) + \underline{a}^T R_M^l\underline{a}|}. \\
+\end{align*}
+And reformulate the problem as a quadratically constrained quadratic programming (QCQP), by defining additional parameters (or actually quadratically constrained linear programming):
+\begin{align*}
+\min\limits_{\underline{a}\in\field{R}^M,\underline{\widetilde{J}}\in\field{R}^{|L|}} \underline{1}^T \underline{\widetilde{J}} & \\
+s.t & \\
+& \underline{\widetilde{J}}\succeq \underline{0}, \\
+\forall l\in L: & \\
+& r(l) + \underline{a}^T\left( \underline{d}_M^{l-} + \underline{d}_M^{l+} \right) + \underline{a}^T R_M^l\underline{a} \leq \widetilde{J}_l, \\
+& r(l) + \underline{a}^T\left( \underline{d}_M^{l-} + \underline{d}_M^{l+} \right) + \underline{a}^T R_M^l\underline{a} \geq -\widetilde{J}_l. \\
+\end{align*}
+
+We must notice, however, that this QCQP is \textbf{not convex} since the matrices $R_M^l$ are not positive semidefinite (PSD). First lets notice that since $\underline{a}^T R_M^l\underline{a}$ is a scalar the following holds:
+\begin{align*}
+\underline{a}^T R_M^l\underline{a} = \\
+\frac{1}{2}\left( \underline{a}^T R_M^l\underline{a} + \underline{a}^T R_M^l\underline{a}\right) = \\
+\frac{1}{2}\left( \underline{a}^T R_M^l\underline{a} + \left(\underline{a}^T R_M^l\underline{a}\right)^T \right) = \\
+\frac{1}{2}\left( \underline{a}^T R_M^l\underline{a} + \underline{a}^T R_M^{lT}\underline{a} \right) = \\
+\underline{a}^T \left( \frac{R_M^l + R_M^{lT}}{2} \right) \underline{a}.
+\end{align*}
+
+So the fact that the matrices $R_M^l$ are not symmetric is not an issue --- we can calculate their symmetric versions $R_{M,sym}^l=\frac{R_M^l + R_M^{lT}}{2}$ and the problem will stay equivalent to the original non-convex QCQP.
+The natural convex relaxation for this problem is achieved by positivizing these matrices --- projecting the symmetric versions $R_{M,sym}^l$ to the PSD cone (by eigenvalue decomposition, zeroing all the negative eigenvalues and re-composing the matrices) --- to the convex versions $R_{M,cvx}^l$.
+The new problem:
+\begin{align*}
+\min\limits_{\underline{a}\in\field{R}^M,\underline{\widetilde{J}}\in\field{R}^{|L|}} \underline{1}^T \underline{\widetilde{J}} & \\
+s.t & \\
+& \underline{\widetilde{J}}\succeq \underline{0}, \\
+\forall l\in L: & \\
+& r(l) + \underline{a}^T\left( \underline{d}_M^{l-} + \underline{d}_M^{l+} \right) + \underline{a}^T R_{M,cvx}^l\underline{a} \leq \widetilde{J}_l, \\
+& r(l) + \underline{a}^T\left( \underline{d}_M^{l-} + \underline{d}_M^{l+} \right) + \underline{a}^T R_{M,cvx}^l\underline{a} \geq -\widetilde{J}_l \\
+\end{align*}
+is now a convex QCQP and is guaranteed to have a single global minimal value.
+It still might have a whole set of optimal solutions, and still there is the issue of efficient computation of the optimum. Of-the-shelf QCQP solvers might take too much time.
+
+\subsubsection{Order-recursive algorithm}
+To ease the computation, there is the possibility to define a Burg-like algorithm by solving for a lattice filter structure, looking for the reflection coefficients, one by one, recursively, by using the latest order's residual prediction errors (forward and backward) to find the next reflection coefficient.
+For every stage the optimization is over a single scalar value in the segment $\left[ -1,+1\right]$, so a simple line search can be performed to converge to a local minimum (for the general problem, or global minimum for the convex relaxation).
+I'm not sure if this order-greedy procedure guarantees any optimality for the final resulted filter.
 
 % that's all folks
 \end{document}

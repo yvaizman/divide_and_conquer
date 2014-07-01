@@ -131,6 +131,10 @@ temporal integration \cite{Joder:09}....
 
 Multitrack mixing: \cite{scottinstrument,scott2011automatic}....
 
+In \cite{tjoa2010musical} isolated sound single instrument recognition was performed using recordings from UIowa, McGill, OLPC and Freesound datasets, with total of 24 instruments.
+For each separate note (or beat) first STFT was calculated, then non-negative matrix factorization (NMF) was performed on the magnitude STFT. Each atom of the approximation factorization (each combination of spectral column and temporal row) was analyzed separately in the spectral component (the column vector was processed to produce 32 MFCCs) or in the temporal component (the row vector was processed with a predetermined 32-channel Gamma filterbank, and from each response signal the maximal value was retained, for time-shift invariance). RBF-kernel SVM classification was done either using only spectral features (32 MFCCs of an atom), only temporal features (32 Gamma response maxima of an atom), or concatenation of both (64 dimensions per atom). Each atom was regarded as an instance and classified.
+In their results they observed generally better performance by spectral features compared to temporal features, but significant improvement when using both types of features.
+
 \section{Datasets}
 
 \ifCLASSOPTIONcaptionsoff

@@ -39,7 +39,7 @@ for ii = 1:N
         fprintf('%d) -- skipping perc/misc file: %s\n',ii,filename);
         continue;
     end
-    if any(strcmp(metadata{ii,colinds.type},{'viola','viola2012'}))%,'cello'}))
+    if any(strcmp(metadata{ii,colinds.type},'cello'))%{'viola','viola2012'}))%,'cello'}))
         % Skip for now
         fprintf('%d) -- skipping viola file: %s\n',ii,filename);
         continue;
@@ -69,8 +69,8 @@ for ii = 1:N
         notes       = metadata{ii,colinds.notes};
     end
     fprintf('%s|%s\n',filename,notes);
-%    instrument      = metadata{ii,colinds.type};
-    [exp_fs,exp_relocts]    = get_note_frequencies(notes);
+    instrument      = metadata{ii,colinds.type};
+    [exp_fs,exp_relocts]    = get_note_frequencies(notes,instrument);
     
     % This file might not be tonal, or might only have a single note.
     % In both cases, there is only one segment:
@@ -84,6 +84,7 @@ for ii = 1:N
         continue;
     end
     
+    clear segments;
     try
         [segments]                  = segment_to_notes(w,yin_params,smoother,exp_relocts);
         if length(segments) <= 0
@@ -128,8 +129,10 @@ for ni = 1:n_notes
     diffs       = peak_relocts - reloct;
     diffs(1:loci)       = Inf; % Look forward than the latest location
     [mindiff,loci]      = min(abs(diffs));
-    if mindiff>(1/20)
-        error('didnt find close match for expected frequency');
+    if mindiff>(1/14)
+        n_notes = 0;
+        break;
+%        error('didnt find close match for expected frequency');
     end
 %    loci        = find(abs(diffs)<(1/25),1,'first');
     center_locs(ni)     = locs(loci);
@@ -213,7 +216,7 @@ hold on;plot(4+powers*400,'m')
 
 end
 
-function [fs,relocts] = get_note_frequencies(notes)
+function [fs,relocts] = get_note_frequencies(notes,instrument)
 
 if isnan(notes)
     fs              = [];
@@ -251,6 +254,10 @@ if ~isempty(extra_notes)
         relocts         = [relocts,extra_reloct];
     end
     relocts             = sort(relocts,'ascend');
+end
+
+if strcmp('viola2012',instrument)
+    relocts             = relocts - (1+(1/12));
 end
 
 fs                  = 440 * 2.^relocts;
