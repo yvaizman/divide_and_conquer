@@ -109,6 +109,9 @@ VQ in speech coding \cite{gersho1992vq}...
 \section{MIR applications}
 \subsection{Source separation}
 \cite{slaney1994soundSeparation}....
+
+\cite{ozerov2012general} ....
+
 \subsection{Melody extraction and automatic transcription}
 
 \cite{benetos2013automatic,ohanlon2013automatic,peeters2006music}....
@@ -134,6 +137,11 @@ Multitrack mixing: \cite{scottinstrument,scott2011automatic}....
 In \cite{tjoa2010musical} isolated sound single instrument recognition was performed using recordings from UIowa, McGill, OLPC and Freesound datasets, with total of 24 instruments.
 For each separate note (or beat) first STFT was calculated, then non-negative matrix factorization (NMF) was performed on the magnitude STFT. Each atom of the approximation factorization (each combination of spectral column and temporal row) was analyzed separately in the spectral component (the column vector was processed to produce 32 MFCCs) or in the temporal component (the row vector was processed with a predetermined 32-channel Gamma filterbank, and from each response signal the maximal value was retained, for time-shift invariance). RBF-kernel SVM classification was done either using only spectral features (32 MFCCs of an atom), only temporal features (32 Gamma response maxima of an atom), or concatenation of both (64 dimensions per atom). Each atom was regarded as an instance and classified.
 In their results they observed generally better performance by spectral features compared to temporal features, but significant improvement when using both types of features.
+
+In \cite{fuhrmann2011quantifying} Fuhrmann \etal compared different methods to select segments out of a musical excerpt (full production), and apply predominant instrument recognition only on those selected segments. The methods were: taking all the excerpt (regarded as ``upper bound''), taking the first 30 seconds, taking uniformly spaced segments and clustering segments. They shown that selecting with clustering is better than the other segment-selection methods. The whole point of using selected segments was efficiency: to analyse less audio time (taking advantage of the redundancy and repetitiveness common in songs). However, in order to ``cleverly'' select the segments additional analysis should be done (the clustering), using features from all the excerpt, and the selected segments in the clustering methods occupied, in average, 0.66 of the audio time, which is still a lot of time to analyze. In addition, the experiments were done only on 220 excerpts of 30 seconds each, and the results don't show much of an improvement compared to the runtime-cheaper segment-selection methods.
+
+
+In \cite{bosch2012comparison} Bosch \etal suggested combining a pre-stage of an of-the-shelf source separation algorithm (FASST - Flexible Audio Source Separation Framework by Ozerov \etal \cite{ozerov2012general}) before performing instrument recognition. They applied standard separation to 4 channels: bass, drums, melody and other. They observed that when using the same models for instrument recognition on each channel and then combining, the results are worse than using the original audio. However, when training SVM models separately on each of the 4 channels, the result is an improvement.
 
 \section{Datasets}
 

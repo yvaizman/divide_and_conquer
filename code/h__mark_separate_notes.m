@@ -39,11 +39,11 @@ for ii = 1:N
         fprintf('%d) -- skipping perc/misc file: %s\n',ii,filename);
         continue;
     end
-    if any(strcmp(metadata{ii,colinds.type},'cello'))%{'viola','viola2012'}))%,'cello'}))
-        % Skip for now
-        fprintf('%d) -- skipping viola file: %s\n',ii,filename);
-        continue;
-    end
+%     if any(strcmp(metadata{ii,colinds.type},'cello'))%{'viola','viola2012'}))%,'cello'}))
+%         % Skip for now
+%         fprintf('%d) -- skipping viola file: %s\n',ii,filename);
+%         continue;
+%     end
     if isstruct(segmentations{ii})
         % Then this file was already segmented
         fprintf('%d) -- skipping segmented file: %s\n',ii,filename);
@@ -55,12 +55,18 @@ for ii = 1:N
         continue;
     end
 
+%    fprintf('%d) %s ----------\n',ii,filename);
     wav_file        = [data_supdir,filesep,filename];
     
     [w,sr_orig]     = wavread(wav_file);
     w               = mean(w,2);
     w               = resample(w,sr,sr_orig);
     L               = length(w);
+
+%     [issue] = verify_segmentation(segmentations{ii}.segments,L);
+%     if length(issue)>0
+%     end
+%    continue;
 
     % Expected note frequencies:
     if ~isempty(fixed_notes{ii})
@@ -108,6 +114,39 @@ end
 
 
 end
+
+function [issue] = verify_segmentation(segments,L)
+
+issue       = '';
+
+if any(segments < 1)
+    issue   = 'value less than 1';
+    return;
+end
+if any(segments > L)
+    issue   = 'value more than L';
+    return;
+end
+if segments(1,1) ~= 1
+    issue   = 'start not with 1';
+    return;
+end
+if (segments(end,2) ~= L)
+    issue   = 'end not with L';
+    return;
+end
+diffs       = segments(2:end,1) - segments(1:end-1,2);
+if any(diffs ~= 1)
+    issue   = 'start not 1 after previous end';
+    return;
+end
+diffs       = segments(2:end,1) - segments(1:end-1,1);
+if any(diffs < 10)
+    issue   = 'segment too short';
+end
+
+end
+
 
 function [segments] = segment_to_notes(w,yin_params,smoother,exp_relocts)
 

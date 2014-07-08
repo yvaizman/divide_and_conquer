@@ -1,4 +1,4 @@
-function [mel_mat,c,dct_mat] = get_mel_scale_matrix_and_DCT_matrix(p)
+function [mel_mat,dct_mat,c] = get_mel_scale_matrix_and_DCT_matrix(p)
 %%
 %% This is copied from Slaney's ma_mel just for the purpose of getting the
 %% mel scale filters matrix and the DCT matrix
