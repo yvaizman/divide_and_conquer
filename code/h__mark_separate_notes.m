@@ -47,7 +47,7 @@ for ii = 1:N
     if isstruct(segmentations{ii})
         % Then this file was already segmented
         fprintf('%d) -- skipping segmented file: %s\n',ii,filename);
-        continue;
+        %%continue;
     end
     if is_bad_file(ii)
         % Then don't try this file again:
@@ -81,12 +81,19 @@ for ii = 1:N
     % This file might not be tonal, or might only have a single note.
     % In both cases, there is only one segment:
     if length(exp_relocts) <= 1
+        if isstruct(segmentations{ii}) && length(segmentations{ii}.fs)<=0
+            disp('!!!');
+        else
+            continue;
+        end
         segmentations{ii}           = struct();
         segmentations{ii}.segments  = [1,L];
         segmentations{ii}.fs        = exp_fs;
         segmentations{ii}.relocts   = exp_relocts;
         fprintf('%d) ++ single segment file: %s\n',ii,filename);
         save(segments_file,'segmentations','filenames','is_bad_file','fixed_notes');
+        continue;
+    else
         continue;
     end
     

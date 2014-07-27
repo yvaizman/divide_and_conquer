@@ -1,4 +1,4 @@
-function [] = h__allfiles_collect_spectra()
+function [] = h__allfiles_collect_features()
 
 yin_path        ='C:\Users\yonatan\Documents\ucsd\tools\yin_changed\';
 data_supdir     = 'C:\Users\Yonatan\Documents\ucsd\music_data\UIowa\';
@@ -10,50 +10,24 @@ segments_file   = [data_supdir,filesep,'segmentations.mat'];
 [metadata,colinds]  = read_list_file(listfile);
 load(segments_file);
 
-M                   = 100;
-lpc_version         = 'l2';
+N                   = size(metadata,1);
+capacity            = 4000;
+feature             = 'pitch';
 
-params.sr           = 22050;
-params.M            = M;
-params.hoplen       = 1024;
-params.winlen       = 2*params.hoplen;
-params.do_preemph   = true;
-params.do_yin       = false;
-params.yin_path     = yin_path;
-params.use_window   = true;
-
-mfcc_params.fs                  = params.sr;
-mfcc_params.fft_size            = params.winlen;
-mfcc_params.n_mel_bins          = 128;
-mfcc_params.num_ceps_coeffs     = 14;
-mfcc_params.use_first_coeff     = false;
-[mel_mat,dct_mat,c] = get_mel_scale_matrix_and_DCT_matrix(mfcc_params);
-spec_size           = size(mel_mat,2);
-
-with_lpc            = true;
-
-N                   = length(segmentations);
-capacity            = 3500;
-if with_lpc
-    collection      = zeros(params.M+1,capacity);
-    if params.do_preemph
-        outfile         = [out_supdir,filesep,'representatives.As.lpc' lpc_version 'M' num2str(M) '.mat'];
-    else
-        outfile         = [out_supdir,filesep,'representatives.As.lpc' lpc_version 'M' num2str(M) '_nopreemph.mat'];
-    end
-else
-    collection      = zeros(spec_size,capacity);
-    outfile         = [out_supdir,filesep,'representatives.Ss.nolpc.mat'];
+switch feature
+    case 'pitch'
+        feat_dim            = 10;
+        outfile             = [out_supdir,filesep,'pitch.mat'];
+        indir               = [out_supdir,filesep,'pitch'];
+    case 'temporal'
+        feat_dim            = 32;
+        outfile             = [out_supdir,filesep,'temporal_gainfb.mat'];
+        indir               = [out_supdir,filesep,'temporal'];
 end
+
+collection          = zeros(feat_dim,capacity);
 file_inds           = zeros(1,capacity);
 seg_inds            = zeros(1,capacity);
-gains               = -ones(1,capacity);
-
-no_lpc_dir          = [out_supdir,filesep,'nolpc'];
-lpc_dir             = [out_supdir,filesep,'lpc', lpc_version];
-if ~params.do_preemph
-    lpc_dir         = [lpc_dir, '_nopreemph'];
-end
 
 count               = 0;
 for ii = 1:N
@@ -74,21 +48,21 @@ for ii = 1:N
     % Go over the segments in this file:
     segments        = segmentation.segments;
     for si = 1:size(segments,1)
-        in_nolpc    = [no_lpc_dir,filesep,out_core,'.seg' num2str(si),'.nolpc.spec.mat'];
-        if params.do_preemph
-            in_lpc      = [lpc_dir,filesep,out_core,'.seg' num2str(si),'.lpc' lpc_version 'M' num2str(M) '.filters.mat'];
-        else
-            in_lpc      = [lpc_dir,filesep,out_core,'.seg' num2str(si),'.lpc' lpc_version 'M' num2str(M) '_nopreemph.filters.mat'];
-        end
-        
-        if with_lpc
-            infile  = in_lpc;
-        else
-            infile  = in_nolpc;
+        switch feature
+            case 'pitch'
+                infile      = [indir,filesep,out_core,'.seg' num2str(si),'.pitch.mat'];
+            case 'temporal'
+                infile      = [indir,filesep,out_core,'.seg' num2str(si),'.temporal_gainfb.mat'];
         end
         
         if exist(infile,'file')
-            [to_add,add_gains]  = collect_representative_from_segment(infile,with_lpc);
+            load(infile);
+            switch feature
+                case 'pitch'
+                    to_add  = pitch_features;
+                case 'temporal'
+                    to_add  = temporal_features;
+            end
             fprintf('seg%d,',si);
         else
             fprintf('-- skipping missing file: %s\n',infile);
@@ -107,12 +81,10 @@ for ii = 1:N
             collection  = [collection,zeros(size(collection,1),aloc)];
             file_inds   = [file_inds,zeros(1,aloc)];
             seg_inds    = [seg_inds,zeros(1,aloc)];
-            gains       = [gains,-ones(1,aloc)];
         end
         collection(:,i1:i2) = to_add;
         file_inds(i1:i2)    = ii;
         seg_inds(i1:i2)     = si;
-        gains(i1:i2)        = add_gains;
     end
     
     disp(' ');
@@ -122,8 +94,7 @@ end
 collection  = collection(:,1:count);
 file_inds   = file_inds(1:count);
 seg_inds    = seg_inds(1:count);
-gains       = gains(1:count);
-save(outfile,'collection','file_inds','seg_inds','gains');
+save(outfile,'collection','file_inds','seg_inds');
 
 end
 

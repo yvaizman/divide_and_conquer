@@ -31,6 +31,15 @@ w2              = resample(w2,params.sr,sr_orig);
 seg             = w(50001:55000);
 wseg            = hamming(length(seg)).*seg;
 
+seg2            = w(343500:446800);
+gain_sr         = 200; %Hz.
+gain_filt_dur   = 1.5; % seconds
+gain_filt_len   = gain_filt_dur*gain_sr;
+gain_filterbank = get_gamma_filterbank(gain_filt_len,gain_sr);
+features        = calc_temporal_features(seg2,params.sr,gain_sr,gain_filterbank);
+
+test_dwt_lpc(wseg,params);
+
 S1              = spectrogram(w,params.winlen,params.hoplen,params.winlen);
 S2              = spectrogram(w2,params.winlen,params.hoplen,params.winlen);
 
@@ -80,6 +89,56 @@ params.version      = 'convex';
 [A_acl1c,g_acl1c,e_acl1c,out_params_acl1c,S_acl1c] = lpc_and_spec(w,params);
 
 
+end
+
+function [] = test_dwt_lpc(wseg,params)
+
+params.independent_scales = false;
+params.poles_per_level = [10,16];
+[a,poles_per_level,filt_per_level,origfilt_per_level,gain_per_level] = dwt_lpc(wseg,params);
+y = fft(wseg);spec_size=length(wseg)/2+1;ha=freqz(1,a,spec_size);
+m = length(a)-1;
+alpc = lpc(wseg,m);
+hlpc = freqz(1,alpc,spec_size);
+
+N = length(poles_per_level);
+hs = zeros(spec_size,N);
+for ii = 1:N
+    hs(:,ii) = freqz(gain_per_level(ii),filt_per_level{ii},spec_size);
+end
+
+hs_flat = reshape(hs(:,end:-1:1),N*spec_size,1);
+
+sumh = sum(hs,2);
+sumabsh = sum(abs(hs),2);
+sumhdb = sum(20*log10(abs(hs)),2);
+
+figure;plot(20*log10(abs(y(1:spec_size))),'b');hold on;plot(20*log10(abs(ha)),'m');
+hold on;plot(20*log10(abs(hlpc)),'g');title('resulted filter');
+
+figure;plot(20*log10(abs(y(1:spec_size))),'b');hold on;plot(20*log10(abs(hs)));title('hs');
+% figure;plot(20*log10(abs(y(1:spec_size))),'b');hold on;plot(20*log10(abs(sumh)),'g');title('sum hs');
+% figure;plot(20*log10(abs(y(1:spec_size))),'b');hold on;plot(20*log10(sumabsh),'g');title('sum abs hs');
+% figure;plot(20*log10(abs(y(1:spec_size))),'b');hold on;plot(sumhdb,'g');hold on;plot(20*log10(abs(ha)),'m');title('sum abs-hs (dB) and resulted filter in magenta');
+
+en = filter(a,1,wseg);
+elpc = filter(alpc,1,wseg);
+yen = fft(en);
+yelpc = fft(elpc);
+figure;plot(20*log10(abs(yen(1:spec_size))));title('resulted error');
+figure;plot(20*log10(abs(yelpc(1:spec_size))));title('lpc error');
+
+[Lo_D,Hi_D,Lo_R,Hi_R] = wfilters('db45');
+hlor = freqz(Lo_R,1,spec_size);
+hhir = freqz(Hi_R,1,spec_size);
+
+% Original filters:
+ho = zeros(spec_size,N);
+for ii = 1:N
+    ho(:,ii) = freqz(gain_per_level(ii),origfilt_per_level{ii},spec_size);
+end
+
+ho_flat = reshape(ho(:,end:-1:1),N*spec_size,1);
 end
 
 function [res,S,Se] = lpc_and_spec(w,params)

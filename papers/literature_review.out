@@ -12,8 +12,9 @@
 \BOOKMARK [2][-]{subsection.2.5}{LTI filter clustering}{section.2}% 12
 \BOOKMARK [1][-]{section.3}{MIR applications}{}% 13
 \BOOKMARK [2][-]{subsection.3.1}{Source separation}{section.3}% 14
-\BOOKMARK [2][-]{subsection.3.2}{Melody extraction and automatic transcription}{section.3}% 15
-\BOOKMARK [2][-]{subsection.3.3}{Chord recognition}{section.3}% 16
-\BOOKMARK [2][-]{subsection.3.4}{Instrument recognition}{section.3}% 17
-\BOOKMARK [1][-]{section.4}{Datasets}{}% 18
-\BOOKMARK [1][-]{section*.1}{References}{}% 19
+\BOOKMARK [2][-]{subsection.3.2}{Multiple pitch \(fundamental frequency\) estimation}{section.3}% 15
+\BOOKMARK [2][-]{subsection.3.3}{Melody extraction and automatic transcription}{section.3}% 16
+\BOOKMARK [2][-]{subsection.3.4}{Chord recognition}{section.3}% 17
+\BOOKMARK [2][-]{subsection.3.5}{Instrument recognition}{section.3}% 18
+\BOOKMARK [1][-]{section.4}{Datasets}{}% 19
+\BOOKMARK [1][-]{section*.1}{References}{}% 20
