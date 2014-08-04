@@ -63,12 +63,26 @@ params.is_diag          = false;
 reloct_params               = params;
 reloct_params.model_type    = 'linear_regression';
 reloct_params.diff_thresh   = 1/24; % In octaves (equivalent of quarter tone).
+
+
+% mb_params.salience_of_what='f0';
+% mb_params.min_fi=4;
+% mb_params.max_fi=150;
+% mb_params.subbands = [[1:100:1000]',200*ones(10,1)];
+% mb_params.compress = 0.5;
+% mb_params.compress_in_freq = true;
+% mb_params.max_multiple = 6;
+% 
+% mb_params_ff = mb_params;
+% mb_params_ft = mb_params;mb_params_ft.compress_in_freq=false;
+% mb_params_pf = mb_params;mb_params_pf.salience_of_what='period';mb_params_pf.min_period=30;mb_params_pf.max_period=300;
+% mb_params_pt = mb_params;mb_params_pt.salience_of_what='period';mb_params_pt.compress_in_freq=false;mb_params_pt.min_period=30;mb_params_pt.max_period=300;
 % [lpc1_As,lpc1_labels,lpc1_Ss,lpc1_mfs] = ...
 %     prepare_lpc_features(lpc1_filters_file,all_labels,spec_size,mel_mat,dct_mat);
 % lpc1_mfs_eval           = classification_evaluation(lpc1_mfs,lpc1_labels,label2int,int2label);
 
-[lpc2_As,lpc2_labels,lpc2_Ss,lpc2_mfs,lpc2_mfcc] = ...
-    prepare_lpc_features(lpc2_filters_file,all_labels,spec_size,mel_mat,dct_mat);
+% [lpc2_As,lpc2_labels,lpc2_Ss,lpc2_mfs,lpc2_mfcc] = ...
+%     prepare_lpc_features(lpc2_filters_file,all_labels,spec_size,mel_mat,dct_mat);
 %lpc2_mfs_eval           = classification_evaluation(lpc2_mfs,lpc2_labels,params);
 
 
@@ -76,6 +90,25 @@ reloct_params.diff_thresh   = 1/24; % In octaves (equivalent of quarter tone).
 [nolpc_mfcc,nolpc_mfs]  = spectra2mfcc(nolpc_Ss,mel_mat,dct_mat);
 %nolpc_mfs_eval          = classification_evaluation(nolpc_mfs,nolpc_labels,params);
 
+
+mp_params.sr = 22050;
+mp_params.mix_size = 2;
+evaluate_multipitch_estimation(nolpc_Ss,nolpc_reloct,mp_params);
+
+
+
+mix = nolpc_Ss(:,100) + nolpc_Ss(:,1000);
+[filter_mfs_mix,excite_mfs_mix,filter_power_mix,excite_power_mix,filter_log_spec_mix,excite_log_spec_mix] = separate_excitation_filter_with_dft_smoothing(mix,250,22050,mel_mat);
+mix_abs = excite_power_mix.^0.5;
+mix_complex = mix_abs.*exp(1i*angle(mix));
+mix_complex_sym = [mix_complex;conj(mix_complex((end-1):-1:2))];
+mix_time = ifft(mix_complex_sym);
+mix_time = real(mix_time);
+
+params.sr = 22050;
+params.max_multiple = 10;
+params.compress = 0.5;
+params = get_parameters('esacf',params);
 
 [filter_mfs,excite_mfs,filter_power,excite_power,filter_log_spec,excite_log_spec] = ...
     separate_excitation_filter_with_dft_smoothing(nolpc_Ss,150,22050,mel_mat);

@@ -113,6 +113,9 @@ VQ in speech coding \cite{gersho1992vq}...
 \cite{ozerov2012general} ....
 
 \subsection{Multiple pitch (fundamental frequency) estimation}
+In~\cite{tolonen2000computationally} the authors mentioned older methods where the signal is processed by a filterbank (in the time domain) and from each channel a periodicity analysis is done and the results are summed up. In a step towards more efficient computation they suggested filtering just with two band-pass filters (70--1000Hz and 1000--10000Hz), calculating a periodicity measure (using generalized autocorrelation and enhancing it) and summing both periodicity functions together to create a single period-salience function.
+They perform pre-analysis whitening using frequency-warped linear prediction. The generalized autocorrelation was calculated using the DFT, taking the magnitude and compressing it with power of 0.67 or 0.5 and then invers DFT (regular autocorrelation is when using power of 2).
+
 In~\cite{klapuri2006multiple} the authors calculate a salience function for every period by summing spectral amplitudes with modeled weights (by training and fitting over examples they concluded a suitable model should be linearly increasing as function of the candidate fundamental frequency and decreasing like $\frac{1}{m}$ as a function of the harmonic $m$). After calculating the salience of different possible fundamental frequencies they propose three different methods to find the correct fundamental frequencies in the signal. First a direct method detects the maximal salience values. Second an iterative method detects the most likely fundamental frequency and then cancels its (weighted) contribution to the sound from the mixture and continues to find the next. Third, a joint estimation detects the f0 values together.
 As pre-processing they use spectral flattening.
 
